@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         Gemini Conversation Delete Shortcut
+// @name:en      Gemini Conversation Delete Shortcut
 // @namespace    http://tampermonkey.net/
-// @version      0.9
-// @description  Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace. Includes layout check.
+// @version      0.10
+// @description:en  Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace. Includes layout check.
 // @author       Takashi Sasaki
 // @license      MIT
 // @homepageURL  https://x.com/TakashiSasaki
 // @match        https://gemini.google.com/app/*
 // @grant        none
+// @description Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace. Includes layout check.
 // @downloadURL none
 // ==/UserScript==
 
