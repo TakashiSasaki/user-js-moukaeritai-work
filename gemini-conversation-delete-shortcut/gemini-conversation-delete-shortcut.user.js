@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Gemini Conversation Delete Shortcut
 // @namespace    http://tampermonkey.net/
-// @version      0.8
-// @description  Deletes the current Gemini conversation with Ctrl+Shift+Backspace. Includes layout check.
+// @version      0.9
+// @description  Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace. Includes layout check.
 // @author       Takashi Sasaki
 // @license      MIT
 // @homepageURL  https://x.com/TakashiSasaki
@@ -48,7 +48,6 @@
         // 幅が広すぎる場合は処理中断
         if (currentWidth > MAX_WIDTH_FOR_AUTOMATION) {
             console.warn(`Automation skipped: Window width (${currentWidth}px) is too wide for the intended layout.`);
-            // ボタンがないため、エラーメッセージはコンソール出力のみ
             return; // 幅が広すぎるため処理を中断
         }
 
