@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Automates sending of pre-filled next pronpt in ChatGPT conversations.
+// @name         ChatGPT Auto Prompt Sender
 // @namespace    https://userscript.moukaeritai.work/
-// @version      0.9.1.20230818
+// @version      0.9.2.20230818
 // @description  Automates sending of next pre-filled prompt in ChatGPT after current response completion.
 // @author       Takashi SASAKI (https://twitter.com/TakashiSasaki)
 // @match        https://chat.openai.com/c/*
@@ -13,23 +13,6 @@
 // @license      MIT
 // @downloadURL none
 // ==/UserScript==
-
-/*
-This UserScript is designed to enhance the functionality of ChatGPT conversations by automating the process of sending the next pre-filled prompt.
-While ChatGPT is generating responses, you can prepare your next prompt by inputting it into the text box.
-To automate the sending of this pre-filled prompt, select 'Schedule Next Prompt After Ongoing Response' from the TamperMonkey menu.
-Once the current response from ChatGPT is completed, the script will automatically send the pre-filled next prompt.
-This automation streamlines the conversation flow and allows for a more efficient interaction with ChatGPT.
-*/
-
-/*
-このUserScriptは、ChatGPTの会話における次の事前入力されたプロンプトの送信プロセスを自動化することで、ChatGPTの機能を強化するよう設計されています。
-ChatGPTが応答を生成している間、テキストボックスに次のプロンプトを入力して準備することができます。
-この事前入力されたプロンプトの送信を自動化するには、TamperMonkeyのメニューから「Reserve to send next prompt after ongoing answer」を選択します。
-ChatGPTからの現在の応答が完了すると、スクリプトは自動的に事前入力された次のプロンプトを送信します。
-この自動化により、会話の流れがスムーズになり、ChatGPTとのより効率的な対話が可能になります。
-*/
-
 
 setTimeout(function() {
     'use strict';
