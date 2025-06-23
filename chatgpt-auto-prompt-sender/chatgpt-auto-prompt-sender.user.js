@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Automates sending of pre-filled next pronpt in ChatGPT conversations.
 // @namespace    https://userscript.moukaeritai.work/
-// @version      0.6.20230808
+// @version      0.7.20230809
 // @description  Automates sending of next pre-filled prompt in ChatGPT after current response completion.
 // @author       Takashi SASAKI (https://twitter.com/TakashiSasaki)
 // @match        https://chat.openai.com/c/*
+// @match        https://chat.openai.com
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=openai.com
 // @grant        GM_registerMenuCommand
 // @license      MIT
