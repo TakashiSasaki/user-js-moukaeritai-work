@@ -1,10 +1,8 @@
 // ==UserScript==
-// @name         Gemini 会話削除ショートカット
-// @name:en      Gemini Conversation Delete Shortcut
-// @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace. Includes layout check and robust button finding.
-// @description:en Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace using a single shortcut. Includes layout check and robust finding of dialog elements.
+// @name         Gemini Conversation Delete Shortcut
+// @namespace    https://x.com/TakashiSasaki/greasyfork/533285
+// @version      1.5.1
+// @description  Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace or via manual button click. After deletion, emulates a click on the final button. Includes layout check and robust element polling with necessary waits.
 // @author       Takashi Sasaki
 // @license      MIT
 // @homepageURL  https://x.com/TakashiSasaki
@@ -16,140 +14,119 @@
 (function() {
     'use strict';
 
-    // --- 設定 ---
-
-    // ショートカットキー設定 (Ctrl + Shift + Backspace)
-    const SHORTCUT_KEY_CODE = 'Backspace'; // event.code を使用
+    // --- Configuration ---
+    const SHORTCUT_KEY_CODE = 'Backspace';  // event.code to detect Backspace key
     const USE_CTRL_KEY = true;
     const USE_SHIFT_KEY = true;
     const USE_ALT_KEY = false;
-    const USE_META_KEY = false; // Meta キー (Windowsキー, Commandキー)
+    const USE_META_KEY = false;
 
-    // 操作対象の要素セレクタ
-    const SELECTOR_MENU_BUTTON = '[data-test-id="conversation-actions-button"]'; // 会話メニューを開くボタン
-    const SELECTOR_DELETE_BUTTON_IN_MENU = '[data-test-id="delete-button"]'; // メニュー内の「削除」ボタン
-    // 削除確認ダイアログ内の「確認」ボタンのセレクタ
-    // data-test-id が最も安定していると想定されるが、見つからない場合は他のセレクタも検討
+    const SELECTOR_MENU_BUTTON = '[data-test-id="conversation-actions-button"]';
+    const SELECTOR_DELETE_BUTTON_IN_MENU = '[data-test-id="delete-button"]';
     const SELECTOR_CONFIRM_BUTTON_IN_DIALOG = '[data-test-id="confirm-button"]';
+    const SELECTOR_FINAL_BUTTON = '#app-root > main > div > button';
 
-    // ステップ間の待機時間 (ミリ秒) - これはクリック後の「最初の」短い待機として残す
     const WAIT_AFTER_MENU_CLICK = 100;
-    const WAIT_AFTER_DELETE_CLICK = 100; // この待機後、ポーリングで要素を待つ
+    const WAIT_AFTER_DELETE_CLICK = 100;
+    const WAIT_AFTER_CONFIRM_CLICK = 100;  // wait before final button click
+    const POLLING_INTERVAL = 50;
+    const MAX_POLLING_TIME = 3000;
+    const MAX_WIDTH_FOR_AUTOMATION = 960;
 
-    // 要素探索のポーリング設定
-    const POLLING_INTERVAL = 50; // 要素が見つかるかチェックする間隔 (ms)
-    const MAX_POLLING_TIME = 3000; // 要素を見つけるまで試行する最大時間 (ms)
-
-    // レイアウトチェックのための最大ウィンドウ幅 (変更なし)
-    const MAX_WIDTH_FOR_AUTOMATION = 960; // 例: 960px
-
-    // --- スクリプト本体 ---
-
-    // 指定したミリ秒だけ待機する非同期関数 (変更なし)
+    // --- Utility functions ---
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    // 指定したセレクタの要素が出現するまでポーリングで待つ関数
     async function pollForElement(selector, maxTime, interval) {
         const startTime = Date.now();
-        let element = null;
-
         while (Date.now() - startTime < maxTime) {
-            element = document.querySelector(selector);
+            const element = document.querySelector(selector);
             if (element) {
-                console.log(`Element "${selector}" found after ${Date.now() - startTime}ms.`);
-                return element; // 要素が見つかったらそれを返す
+                return element;
             }
-            await sleep(interval); // 見つからなければ指定間隔待つ
+            await sleep(interval);
         }
-
-        console.warn(`Element "${selector}" not found within ${maxTime}ms.`);
-        return null; // 最大時間を超えても見つからなければ null を返す
+        return null;
     }
 
-
-    // 自動化シーケンスの実行関数
+    // --- Main automation sequence ---
     async function performAutomationSequence() {
-        // レイアウトの確認
         const currentWidth = window.innerWidth;
-        console.log(`Automation triggered. Current window width: ${currentWidth}px. Max width for automation: ${MAX_WIDTH_FOR_AUTOMATION}px.`);
-
-        if (currentWidth > MAX_WIDTH_FOR_AUTOMATION) {
-            console.warn(`Automation skipped: Window width (${currentWidth}px) is too wide for the intended layout.`);
-            return; // 幅が広すぎるため処理を中断
-        }
-
-        console.log('Starting automation sequence...');
+        if (currentWidth > MAX_WIDTH_FOR_AUTOMATION) return;
 
         try {
-            console.log('Attempting to find and click menu button...');
-            // 1. 会話メニューを開くボタンをクリック
-            // このボタンは通常ページロード時に存在するため、ポーリングは不要と想定
+            // 1. Open conversation menu
             const menuButton = document.querySelector(SELECTOR_MENU_BUTTON);
-            if (!menuButton) {
-                console.error('Automation failed: Menu button not found:', SELECTOR_MENU_BUTTON);
-                throw new Error('Menu button not found');
-            }
+            if (!menuButton) throw new Error('Menu button not found');
             menuButton.click();
-            console.log('Menu button clicked.');
-
             await sleep(WAIT_AFTER_MENU_CLICK);
-            console.log(`Initial wait ${WAIT_AFTER_MENU_CLICK}ms. Attempting to find and click delete button in menu...`);
 
-            // メニュー内のボタンも、出現に時間差がある可能性があるためポーリングを導入
-            const deleteButtonInMenu = await pollForElement(SELECTOR_DELETE_BUTTON_IN_MENU, MAX_POLLING_TIME, POLLING_INTERVAL);
-            if (!deleteButtonInMenu) {
-                 console.error('Automation failed: Delete button in menu not found:', SELECTOR_DELETE_BUTTON_IN_MENU);
-                 throw new Error('Delete button in menu not found');
-            }
-            deleteButtonInMenu.click();
-            console.log('Delete button in menu clicked.');
-
+            // 2. Click "Delete" in menu
+            const deleteBtn = await pollForElement(SELECTOR_DELETE_BUTTON_IN_MENU, MAX_POLLING_TIME, POLLING_INTERVAL);
+            if (!deleteBtn) throw new Error('Delete button not found');
+            deleteBtn.click();
             await sleep(WAIT_AFTER_DELETE_CLICK);
-            console.log(`Initial wait ${WAIT_AFTER_DELETE_CLICK}ms. Attempting to find and click confirm button in dialog (polling)...`);
 
-            // 確認ボタンが出現するまでポーリングで待つ
-            const confirmButtonInDialog = await pollForElement(SELECTOR_CONFIRM_BUTTON_IN_DIALOG, MAX_POLLING_TIME, POLLING_INTERVAL);
+            // 3. Confirm deletion
+            const confirmBtn = await pollForElement(SELECTOR_CONFIRM_BUTTON_IN_DIALOG, MAX_POLLING_TIME, POLLING_INTERVAL);
+            if (!confirmBtn) throw new Error('Confirm button not found');
+            confirmBtn.click();
 
-            if (!confirmButtonInDialog) {
-                 console.error('Automation failed: Confirm button in dialog not found:', SELECTOR_CONFIRM_BUTTON_IN_DIALOG);
-                 throw new Error('Confirm button in dialog not found');
+            // Wait before final button click to ensure UI update
+            await sleep(WAIT_AFTER_CONFIRM_CLICK);
+
+            // 4. Emulate click on final button
+            const finalBtn = await pollForElement(SELECTOR_FINAL_BUTTON, MAX_POLLING_TIME, POLLING_INTERVAL);
+            if (finalBtn) {
+                finalBtn.click();
+            } else {
+                console.warn('Final button not found:', SELECTOR_FINAL_BUTTON);
             }
-            confirmButtonInDialog.click();
-            console.log('Confirm button in dialog clicked. Sequence complete.');
 
-            // 成功時の処理
-            console.log('Automation sequence completed successfully.');
-
-        } catch (error) {
-            console.error('An error occurred during the automation sequence:', error);
+        } catch (err) {
+            console.error('Automation error:', err);
         }
     }
 
-    // 指定したミリ秒だけ待機する非同期関数 (変更なし)
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // --- ショートカットキーイベントリスナー --- (変更なし)
-
-     document.addEventListener('keydown', function(event) {
-        // 設定したショートカットキーか判定
-        if (event.code === SHORTCUT_KEY_CODE &&
-            event.ctrlKey === USE_CTRL_KEY &&
-            event.shiftKey === USE_SHIFT_KEY &&
-            event.altKey === USE_ALT_KEY &&
-            event.metaKey === USE_META_KEY)
-        {
+    // --- Keyboard shortcut listener ---
+    document.addEventListener('keydown', function(event) {
+        if (event.code === SHORTCUT_KEY_CODE && event.ctrlKey === USE_CTRL_KEY && event.shiftKey === USE_SHIFT_KEY && event.altKey === USE_ALT_KEY && event.metaKey === USE_META_KEY) {
             event.preventDefault();
             event.stopPropagation();
-
-            console.log('Shortcut key (Ctrl+Shift+Backspace) detected.');
-
             performAutomationSequence();
         }
-    }, true); // キャプチャフェーズでイベントを捕捉
+    }, true);
 
+    // --- Manual trigger button insertion ---
+    function insertManualTriggerButton() {
+        const headers = document.querySelectorAll('div.response-container-header');
+        headers.forEach(header => {
+            if (header.querySelector('.delete-shortcut-button')) return;
+            const moreBtn = header.querySelector('button[data-test-id="more-menu-button"]');
+            if (!moreBtn) return;
+            const wrapper = moreBtn.closest('div.menu-button-wrapper');
+            if (!wrapper) return;
+            const btn = document.createElement('button');
+            btn.className = 'delete-shortcut-button';
+            btn.title = 'Delete conversation (Ctrl+Shift+Backspace)';
+            btn.textContent = '🗑️';
+            btn.style.marginLeft = '8px';
+            btn.style.padding = '4px';
+            btn.style.border = 'none';
+            btn.style.background = 'transparent';
+            btn.style.cursor = 'pointer';
+            btn.addEventListener('click', event => {
+                event.preventDefault();
+                performAutomationSequence();
+            });
+            wrapper.parentNode.insertBefore(btn, wrapper.nextSibling);
+        });
+    }
+
+    // Observe DOM changes to insert button dynamically
+    const observer = new MutationObserver(insertManualTriggerButton);
+    observer.observe(document.body, { childList: true, subtree: true });
+    insertManualTriggerButton();
 
 })();
