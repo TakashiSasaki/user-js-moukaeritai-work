@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Automates sending of pre-filled next pronpt in ChatGPT conversations.
 // @namespace    https://userscript.moukaeritai.work/
-// @version      0.5.20230808
+// @version      0.6.20230808
 // @description  Automates sending of next pre-filled prompt in ChatGPT after current response completion.
 // @author       Takashi SASAKI (https://twitter.com/TakashiSasaki)
 // @match        https://chat.openai.com/c/*
@@ -14,7 +14,7 @@
 /*
 This UserScript is designed to enhance the functionality of ChatGPT conversations by automating the process of sending the next pre-filled prompt.
 While ChatGPT is generating responses, you can prepare your next prompt by inputting it into the text box.
-To automate the sending of this pre-filled prompt, select 'Reserve to send next prompt after ongoing answer' from the TamperMonkey menu.
+To automate the sending of this pre-filled prompt, select 'Schedule Next Prompt After Ongoing Response' from the TamperMonkey menu.
 Once the current response from ChatGPT is completed, the script will automatically send the pre-filled next prompt.
 This automation streamlines the conversation flow and allows for a more efficient interaction with ChatGPT.
 */
