@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChatGPT Auto Prompt Sender
 // @namespace    https://userscript.moukaeritai.work/
-// @version      0.9.2.20230818
+// @version      0.9.3.20230818
 // @description  Automates sending of next pre-filled prompt in ChatGPT after current response completion.
 // @author       Takashi SASAKI (https://twitter.com/TakashiSasaki)
 // @match        https://chat.openai.com/c/*
