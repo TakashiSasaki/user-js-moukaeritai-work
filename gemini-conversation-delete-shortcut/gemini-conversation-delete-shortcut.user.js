@@ -1,21 +1,33 @@
 // ==UserScript==
 // @name         Gemini Conversation Delete Shortcut
 // @namespace    https://x.com/TakashiSasaki/greasyfork/533285
-// @version      1.5.1
-// @description  Deletes the current Gemini conversation on Gemini with Ctrl+Shift+Backspace or via manual button click. After deletion, emulates a click on the final button. Includes layout check and robust element polling with necessary waits.
-// @author       Takashi Sasaki
+// @version      1.5.8
+// @description  Deletes the current Gemini conversation with a keyboard shortcut or button, and provides a Tampermonkey menu command to show script status, including header detection count and insertion logs.
+// @author       Takashi Sasasaki
 // @license      MIT
 // @homepageURL  https://x.com/TakashiSasaki
 // @match        https://gemini.google.com/app/*
-// @grant        none
+// @grant        GM_registerMenuCommand
 // @downloadURL none
 // ==/UserScript==
 
 (function() {
     'use strict';
 
+    // --- Register Tampermonkey menu command for status ---
+    GM_registerMenuCommand('Show delete shortcut status', () => {
+        const headers = document.querySelectorAll('div.response-container-header');
+        const currentUrl = window.location.href;
+        alert(
+            `Gemini Conversation Delete Shortcut is active (version 1.5.8).\n` +
+            `URL: ${currentUrl}\n` +
+            `Found ${headers.length} elements matching div.response-container-header.`
+        );
+        console.log(`Delete Shortcut Status: URL=${currentUrl}, Found ${headers.length} headers.`);
+    });
+
     // --- Configuration ---
-    const SHORTCUT_KEY_CODE = 'Backspace';  // event.code to detect Backspace key
+    const SHORTCUT_KEY_CODE = 'Backspace';
     const USE_CTRL_KEY = true;
     const USE_SHIFT_KEY = true;
     const USE_ALT_KEY = false;
@@ -28,7 +40,7 @@
 
     const WAIT_AFTER_MENU_CLICK = 100;
     const WAIT_AFTER_DELETE_CLICK = 100;
-    const WAIT_AFTER_CONFIRM_CLICK = 100;  // wait before final button click
+    const WAIT_AFTER_CONFIRM_CLICK = 100;
     const POLLING_INTERVAL = 50;
     const MAX_POLLING_TIME = 3000;
     const MAX_WIDTH_FOR_AUTOMATION = 960;
@@ -52,79 +64,75 @@
 
     // --- Main automation sequence ---
     async function performAutomationSequence() {
-        const currentWidth = window.innerWidth;
-        if (currentWidth > MAX_WIDTH_FOR_AUTOMATION) return;
-
+        if (window.innerWidth > MAX_WIDTH_FOR_AUTOMATION) return;
         try {
-            // 1. Open conversation menu
             const menuButton = document.querySelector(SELECTOR_MENU_BUTTON);
             if (!menuButton) throw new Error('Menu button not found');
             menuButton.click();
             await sleep(WAIT_AFTER_MENU_CLICK);
 
-            // 2. Click "Delete" in menu
             const deleteBtn = await pollForElement(SELECTOR_DELETE_BUTTON_IN_MENU, MAX_POLLING_TIME, POLLING_INTERVAL);
             if (!deleteBtn) throw new Error('Delete button not found');
             deleteBtn.click();
             await sleep(WAIT_AFTER_DELETE_CLICK);
 
-            // 3. Confirm deletion
             const confirmBtn = await pollForElement(SELECTOR_CONFIRM_BUTTON_IN_DIALOG, MAX_POLLING_TIME, POLLING_INTERVAL);
             if (!confirmBtn) throw new Error('Confirm button not found');
             confirmBtn.click();
-
-            // Wait before final button click to ensure UI update
             await sleep(WAIT_AFTER_CONFIRM_CLICK);
 
-            // 4. Emulate click on final button
             const finalBtn = await pollForElement(SELECTOR_FINAL_BUTTON, MAX_POLLING_TIME, POLLING_INTERVAL);
-            if (finalBtn) {
-                finalBtn.click();
-            } else {
-                console.warn('Final button not found:', SELECTOR_FINAL_BUTTON);
-            }
-
+            if (finalBtn) finalBtn.click();
+            else console.warn('Final button not found:', SELECTOR_FINAL_BUTTON);
         } catch (err) {
             console.error('Automation error:', err);
         }
     }
 
     // --- Keyboard shortcut listener ---
-    document.addEventListener('keydown', function(event) {
-        if (event.code === SHORTCUT_KEY_CODE && event.ctrlKey === USE_CTRL_KEY && event.shiftKey === USE_SHIFT_KEY && event.altKey === USE_ALT_KEY && event.metaKey === USE_META_KEY) {
+    document.addEventListener('keydown', event => {
+        if (event.code === SHORTCUT_KEY_CODE &&
+            event.ctrlKey === USE_CTRL_KEY &&
+            event.shiftKey === USE_SHIFT_KEY &&
+            event.altKey === USE_ALT_KEY &&
+            event.metaKey === USE_META_KEY) {
             event.preventDefault();
             event.stopPropagation();
             performAutomationSequence();
         }
     }, true);
 
-    // --- Manual trigger button insertion ---
+    // --- Manual trigger button insertion with tracing ---
     function insertManualTriggerButton() {
-        const headers = document.querySelectorAll('div.response-container-header');
-        headers.forEach(header => {
-            if (header.querySelector('.delete-shortcut-button')) return;
-            const moreBtn = header.querySelector('button[data-test-id="more-menu-button"]');
-            if (!moreBtn) return;
-            const wrapper = moreBtn.closest('div.menu-button-wrapper');
-            if (!wrapper) return;
+        // Select generic menu-button-wrapper only
+        const wrapperSelector = 'div.menu-button-wrapper';
+        const wrappers = document.querySelectorAll(wrapperSelector);
+        console.log(`insertManualTriggerButton called: found ${wrappers.length} wrappers.`);
+        wrappers.forEach((wrapper, index) => {
+            console.log(`Processing wrapper ${index + 1}/${wrappers.length}:`, wrapper);
+            if (wrapper.parentNode.querySelector('.delete-shortcut-button')) {
+                console.log('  Skipping: delete-shortcut-button already exists near this wrapper');
+                return;
+            }
             const btn = document.createElement('button');
             btn.className = 'delete-shortcut-button';
             btn.title = 'Delete conversation (Ctrl+Shift+Backspace)';
             btn.textContent = '🗑️';
             btn.style.marginLeft = '8px';
             btn.style.padding = '4px';
-            btn.style.border = 'none';
-            btn.style.background = 'transparent';
+            btn.style.border = '1px solid red';
+            btn.style.background = 'yellow';
             btn.style.cursor = 'pointer';
+            btn.style.zIndex = '9999';
             btn.addEventListener('click', event => {
                 event.preventDefault();
                 performAutomationSequence();
             });
             wrapper.parentNode.insertBefore(btn, wrapper.nextSibling);
+            console.log('  Inserted delete button');
         });
     }
 
-    // Observe DOM changes to insert button dynamically
     const observer = new MutationObserver(insertManualTriggerButton);
     observer.observe(document.body, { childList: true, subtree: true });
     insertManualTriggerButton();
