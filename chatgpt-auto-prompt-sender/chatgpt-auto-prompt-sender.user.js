@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Automates sending of pre-filled next pronpt in ChatGPT conversations.
 // @namespace    https://userscript.moukaeritai.work/
-// @version      0.7.20230809
+// @version      0.8.20230809
 // @description  Automates sending of next pre-filled prompt in ChatGPT after current response completion.
 // @author       Takashi SASAKI (https://twitter.com/TakashiSasaki)
 // @match        https://chat.openai.com/c/*
 // @match        https://chat.openai.com
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=openai.com
 // @grant        GM_registerMenuCommand
+// @grant        GM_openInTab
 // @license      MIT
 // @downloadURL none
 // ==/UserScript==
@@ -58,6 +59,15 @@ setTimeout(function() {
                                   subtree: true
                                  });
     });
+
+    GM_registerMenuCommand("Open this user script in Github Gist", () => {
+        GM_openInTab('https://gist.github.com/TakashiSasaki/730f930806ec1a6460ab350f7498d622/', { active: true });
+    });
+
+    GM_registerMenuCommand("Open this user script in Greasy Fork", () => {
+        GM_openInTab('https://greasyfork.org/ja/scripts/472713', { active: true });
+    });
+
 
     // Your code here...
 }, 1000);
